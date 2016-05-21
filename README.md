@@ -1,2 +1,2 @@
 # stockfighter
-SImple Go client for stockgihter.io
+Simple Go client for stockfighter.io
