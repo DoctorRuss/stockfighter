@@ -1,110 +1,63 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+	"time"
+	"github.com/doctorruss/stockfighter/stockfighter"
 )
 
-type VenueStatus struct {
-	OK    bool `json:"ok"`
-	Venue string `json:"venue"`
-}
-
-type APIStatus struct {
-	OK    bool `json:"ok"`
-	Error string `json:"error"`
-}
-
-type StockDetails struct {
-	Name    string `json:"name"`
-	Symbol string `json:"symbol"`
-}
-
-type VenueStocks struct {
-	OK    bool `json:"ok"`
-	Stocks []StockDetails `json:"symbols"`
-}
-
-type Order struct {
-	Price    int `json:"price"`
-	Quantity int `json:"qty"`
-	IsBuy    bool `json:"isBuy"`
-}
-
-type OrderBook struct {
-	OK    bool `json:"ok"`
-	Venue string `json:"venue"`
-	Symbol string `json:"symbol"`
-	Timestamp string `json:"ts"`
-
-	Bids []Order `json:"bids"`
-	Asks []Order `json:"asks"`
-}
 func main() {
 	// first call to Stockfighter API
-	endpoint := "https://api.stockfighter.io/ob/api/heartbeat"
-	bodytext := stockfighterAPI(endpoint)
-	fmt.Printf("Stockfighter heartbeat: %s\n", bodytext)
-
-	var apiStates APIStatus
-	err := json.Unmarshal(bodytext, &apiStates)
-	if err != nil {
-		panic(err)
+	stockfighter.CheckStockfighterHeartbeat()
+	
+	// create level by name
+	levelname := "first_steps"
+	
+	g := stockfighter.GM{LevelName:levelname}
+	g.GetLevels()
+	fmt.Printf("GM %+v\n", g)
+	levelDetails := g.CreateLevel()
+	fmt.Printf("GM %+v\n", g)
+	
+	if levelDetails.OK == false {
+		panic(levelDetails.Error)
 	}
-	fmt.Printf("API heartbeat: %+v\n", apiStates)
+	defer g.StopLevel()
+	// create order broker with level details
+	venue := levelDetails.Venues[0]
+	tradingAccount := levelDetails.Account
+	stock := levelDetails.Tickers[0]
+	ob := stockfighter.OrderBroker{venue, tradingAccount, stock}
 	
-	venueHeartbeat := "https://api.stockfighter.io/ob/api/venues/TESTEX/heartbeat"
-	bodytext = stockfighterAPI(venueHeartbeat)
-	fmt.Printf("TESTEX heartbeat: %s\n", bodytext)
-
-	var venueStates VenueStatus
-	err = json.Unmarshal(bodytext, &venueStates)
-	if err != nil {
-		panic(err)
+	// check venue heartbeat, because why not
+	ob.CheckVenueHeartbeat()
+	
+	// get stock from venue
+	// venueStocks := ob.GetStock()
+    // fmt.Printf("%s stocks: %+v\n", venue, venueStocks)
+	// // assign stock variable
+	// stock := venueStocks.Stocks[0].Symbol
+	
+	// get order book
+	for i := 0; i < 5; i++ {
+	
+		orderbook := ob.GetOrderBook()
+		fmt.Printf("%s order book: %+v\n", venue, orderbook)
+		
+		quote := ob.GetQuote()
+		
+		fmt.Printf("%s %d quote: %+v\n", stock, quote.Spread(), quote)
+	    time.Sleep(2000 * time.Millisecond)
 	}
-
-	fmt.Printf("TESTEX heartbeat: %+v\n", venueStates)
+	quote := ob.GetQuote()
+		
+	ob.Buy(100, quote.Ask)
 	
-	venueStock := "https://api.stockfighter.io/ob/api/venues/TESTEX/stocks"
-	bodytext = stockfighterAPI(venueStock)
-	fmt.Printf("TESTEX stocks: %s\n", bodytext)
-
-	var venueStocks VenueStocks
-	err = json.Unmarshal(bodytext, &venueStocks)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("TESTEX stocks: %+v\n", venueStocks)
-	
-	stock := venueStocks.Stocks[0].Symbol
-	stockOrder := "https://api.stockfighter.io/ob/api/venues/TESTEX/stocks/" + stock
-	bodytext = stockfighterAPI(stockOrder)
-	fmt.Printf("TESTEX order book: %s\n", bodytext)
-
-	var orderbook OrderBook
-	err = json.Unmarshal(bodytext, &orderbook)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("TESTEX order book: %+v\n", orderbook)
-	
-	
+	fmt.Printf("instance details: %+v\n",	g.GetInstanceDetails())
 }
 
-func stockfighterAPI(endpoint string) []byte {
-	res, err := http.Get(endpoint)
 
-	if err != nil {
-		panic(err)
-	}
-	bodytext, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
-	if err != nil {
-		panic(err)
-	}
-	return bodytext
-}
+
+
+
+
