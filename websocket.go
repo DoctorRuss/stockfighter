@@ -36,26 +36,26 @@ func main() {
     // create websocket endpoint with level details
     venue := levelDetails.Venues[0]
     tradingAccount := levelDetails.Account
-
-    //tickertape := "/ob/api/ws/" + tradingAccount + "/venues/" + venue+ "/tickertape"
-    
-
-
     stock := levelDetails.Tickers[0]
     //executions := "/ob/api/ws/" + tradingAccount + "/venues/" + venue+ "/executions/stocks/" + stock
     quotes := "/ob/api/ws/" + tradingAccount + "/venues/" + venue+ "/tickertape/stocks/" + stock
-
-    // create channel to comunicate between goroutines
-    // this channel will be closed when the ReceiveWebsocketMsg routines exits
-    done := make(chan struct{})
     
     // create websocket connection and defer the close down
-    connection := stockfighter.CreateWebsocket(quotes)
-    defer stockfighter.CloseWebSocket(*connection, done)
+    connection := stockfighter.NewWebsocket(quotes)
+    defer connection.CloseWebSocket()
     
     // fire goroutine to receive messages
-    go stockfighter.ReceiveWebsocketMsg(*connection, done)
+    msgs:=make(chan [] byte)
+    go connection.ReceiveWebsocketMsg(msgs)
     
-    // wait until Ctrl+C
-     <-interrupt
+    for {
+        select {
+        case message := <- msgs:
+         
+		    log.Printf("recv: %s", message)
+        // wait until Ctrl+C
+        case <-interrupt:
+           return;
+        }
+    }
 }
