@@ -69,5 +69,5 @@ func (g *GM)  StopLevel()  {
     buffer.WriteString( strconv.Itoa(g.InstanceID) )
     buffer.WriteString("/stop")
 	body := StockfighterPost(buffer.String(), nil)
-    fmt.Printf("%s\n",body)
+    fmt.Printf("Stopping level: %s\n",body)
 }

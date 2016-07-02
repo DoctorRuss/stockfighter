@@ -1,20 +1,25 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"time"
 	"github.com/doctorruss/stockfighter/stockfighter"
 )
 
+var close = flag.Bool("close", true, "Shut down the level on exit")
+
 func main() {
+	flag.Parse()
+	
 	// first call to Stockfighter API
 	stockfighter.CheckStockfighterHeartbeat()
 	
 	// create level by name
-	levelname := "first_steps"
+	levelname := "chock_a_block"
 	
 	g := stockfighter.GM{LevelName:levelname}
-	g.GetLevels()
+	//g.GetLevels()
 	fmt.Printf("GM %+v\n", g)
 	levelDetails := g.CreateLevel()
 	fmt.Printf("GM %+v\n", g)
@@ -22,7 +27,9 @@ func main() {
 	if levelDetails.OK == false {
 		panic(levelDetails.Error)
 	}
-	defer g.StopLevel()
+	if (*close) {
+	    defer g.StopLevel()
+	}
 	// create order broker with level details
 	venue := levelDetails.Venues[0]
 	tradingAccount := levelDetails.Account
