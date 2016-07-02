@@ -17,10 +17,9 @@ func CreateWebsocket(path string) *websocket.Conn {
     u := url.URL{Scheme: "wss", Host: hostAddr, Path: path}
 	log.Printf("connecting to %s", u.String())
 
-    req, err := http.NewRequest("GET", u.String(), nil)
-    req.Header.Set("X-Starfighter-Authorization", os.Getenv("Value"))
-    req.Header.Set("Content-Type", "application/json")
-    c, resp, err := websocket.DefaultDialer.Dial(u.String(), req.Header)
+    header := http.Header{}
+    header.Set("X-Starfighter-Authorization", os.Getenv("Value"))
+    c, resp, err := websocket.DefaultDialer.Dial(u.String(), header)
 	if err != nil {
 	    log.Fatal(resp)
 		log.Fatal("dial:", err)
